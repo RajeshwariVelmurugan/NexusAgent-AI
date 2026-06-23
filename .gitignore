@@ -1,0 +1,28 @@
+# Secrets - GitHub la poga koodathu
+.env
+.env.local
+.env.example
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# AI index files (BIG files!)
+data/faiss_index/
+embedding_cache/
+
+# Eval history
+data/eval_log.json
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+﻿This is a sample document about Artificial Intelligence.
+
+Artificial Intelligence (AI) is transforming how we work and live.
+Machine learning models can understand and generate human language.
+Multi-agent systems are the future of AI where multiple AI agents collaborate.
+Transformers and large language models like GPT-4 are key technologies.
