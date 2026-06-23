@@ -35,7 +35,7 @@ requests==2.31.0
 # Frontend Dashboard
 streamlit==1.38.0
 plotly==5.24.1
-pandas==2.2.2
+pandas==2.1.4
 
 # Utilities
 numpy==1.26.4
