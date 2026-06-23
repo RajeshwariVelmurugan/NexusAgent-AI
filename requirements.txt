@@ -1,21 +1,33 @@
-# Phase 1 + 2 packages
-langchain==0.2.16
-langchain-groq==0.1.9
-langchain-community==0.2.16
-langgraph==0.2.28
-llama-index==0.10.68
-llama-index-embeddings-huggingface==0.2.3
-llama-index-llms-groq==0.1.4
-faiss-cpu==1.8.0
-tavily-python==0.3.3
-psycopg2-binary==2.9.9
-python-dotenv==1.0.1
-pypdf==4.3.1
-sentence-transformers==3.0.1
-redis==5.0.8
+# Core
+langchain==0.3.15
+langchain-groq==0.2.0
+langchain-community==0.3.15
+langgraph==0.2.70
 
-# Phase 3 - Dashboard
-streamlit==1.38.0
+# LlamaIndex
+llama-index==0.12.28
+llama-index-embeddings-huggingface==0.4.0
+llama-index-llms-groq==0.4.0
+faiss-cpu==1.8.0
+sentence-transformers==3.0.1
+
+# Web Search
+tavily-python==0.5.0
+
+# Database
+psycopg2-binary==2.9.10
+
+# Memory
+redis==5.2.0
+
+# API
+fastapi==0.115.6
+uvicorn==0.34.0
+pydantic==2.10.4
+python-dotenv==1.0.1
+requests==2.32.3
+
+# Dashboard
+streamlit==1.41.0
 plotly==5.24.1
-pandas==2.2.2
-requests==2.31.0
+pandas==2.2.3
