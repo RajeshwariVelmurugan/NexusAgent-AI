@@ -8,7 +8,7 @@
 import os
 from langchain_community.utilities import SQLDatabase
 from langchain_groq import ChatGroq
-from langchain_classic.chains import create_sql_query_chain
+from langchain.chains import create_sql_query_chain
 from core.state import RAGState, AgentResult
 from core.config import ACTIVE_MODEL
 
