@@ -1,10 +1,8 @@
 # agents/doc_agent.py
-# Fix 1: HuggingFace embeddings — no OpenAI needed
-# Fix 2: Groq LLM connected — no MockLLM warning
-# Fix 3: Old OpenAI index auto-cleared on mismatch
+# Uses HuggingFace Inference API (FREE - no local model!)
+# No torch, no transformers downloads - build in 30 seconds!
 
 import os
-import shutil
 from pathlib import Path
 
 from llama_index.core import (
@@ -15,42 +13,47 @@ from llama_index.core import (
     Settings,
 )
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.llms.groq import Groq
+
+# KEY CHANGE: Use API instead of local HuggingFace model
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
 from core.state import RAGState, AgentResult
-from core.config import EMBED_MODEL, TOP_K_DOCS, CHUNK_SIZE, CHUNK_OVERLAP, ACTIVE_MODEL
+from core.config import TOP_K_DOCS, CHUNK_SIZE, CHUNK_OVERLAP
 
 DOCS_DIR = Path("data/sample_docs")
 INDEX_DIR = Path("data/faiss_index")
 
+
 def _setup_settings():
     """
-    Fix 1: HuggingFace embeddings — completely free, runs locally.
-    Fix 2: Groq LLM — no more MockLLM warning.
+    Uses HuggingFace Inference API - FREE, no local model needed!
+    No torch, no transformers - Railway builds in 30 seconds!
     """
-    Settings.embed_model = HuggingFaceEmbedding(
-        model_name=EMBED_MODEL,
-        embed_batch_size=10,           
-        cache_folder="./embedding_cache"  
+    
+    # Get HuggingFace token from environment
+    hf_token = os.getenv("HF_TOKEN", "")
+    if not hf_token:
+        print("[DocAgent] ⚠️ HF_TOKEN not set! Add to Railway variables.")
+        print("[DocAgent] Get free token: https://huggingface.co/settings/tokens")
+    
+    # KEY CHANGE: API-based embeddings (FREE, no local download)
+    Settings.embed_model = HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=hf_token,
+        task="feature-extraction"
     )
-    print(f"[DocAgent] Embeddings: HuggingFace {EMBED_MODEL} ✓")
-    groq_key = os.getenv("GROQ_API_KEY", "")
-    if groq_key:
-        Settings.llm = Groq(
-            model=ACTIVE_MODEL,
-            api_key=groq_key,
-        )
-        print("[DocAgent] LLM: Groq Llama 3.1 ✓")
-    else:
-        raise EnvironmentError("[DocAgent] GROQ_API_KEY not set in .env")
+    print(f"[DocAgent] Embeddings: HuggingFace API (all-MiniLM-L6-v2) ✅")
+    print(f"[DocAgent] Token: {'✓ Set' if hf_token else '❌ Missing'}")
 
     Settings.node_parser = SentenceSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
     )
+    Settings.llm = None  # No LLM needed for indexing
+
 
 def _build_index() -> VectorStoreIndex:
+    """Build FAISS index from scratch (first run only)"""
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -66,7 +69,7 @@ def _build_index() -> VectorStoreIndex:
             "→ Add at least one PDF or TXT file and run again."
         )
 
-    print(f"[DocAgent] Indexing {len(documents)} document(s) — first run takes ~2 min...")
+    print(f"[DocAgent] Indexing {len(documents)} document(s)...")
     index = VectorStoreIndex.from_documents(documents, show_progress=True)
     index.storage_context.persist(persist_dir=str(INDEX_DIR))
     print("[DocAgent] Index saved. Next runs will be instant.")
@@ -74,6 +77,7 @@ def _build_index() -> VectorStoreIndex:
 
 
 def _load_index() -> VectorStoreIndex:
+    """Load existing index from disk (fast path)"""
     print("[DocAgent] Loading saved index from disk...")
     ctx = StorageContext.from_defaults(persist_dir=str(INDEX_DIR))
     return load_index_from_storage(ctx)
@@ -83,6 +87,7 @@ _index = None
 
 
 def _get_index():
+    """Singleton pattern - load once, reuse"""
     global _index
     if _index is None:
         _setup_settings()
@@ -92,6 +97,7 @@ def _get_index():
 
 
 def doc_agent_node(state: RAGState) -> dict:
+    """LangGraph node for document retrieval"""
     query = state["query"]
     print(f"\n[DocAgent] Searching documents for: '{query}'")
 
@@ -103,20 +109,21 @@ def doc_agent_node(state: RAGState) -> dict:
         print(str(e))
         return {"agent_results": []}
     except Exception as e:
-        print(f"[DocAgent] Error: {e}")
+        print(f"[DocAgent] Error during retrieval: {e}")
         return {"agent_results": []}
 
     results = []
     for node in nodes:
         score = float(node.score) if node.score else 0.5
         filename = node.metadata.get("file_name", "unknown")
+        
         results.append(AgentResult(
             agent="doc_agent",
             content=node.text.strip(),
             source=filename,
             confidence=round(score, 4),
         ))
-        print(f"  [DocAgent] {score:.3f} | {filename} | {node.text[:60]}...")
+        print(f"  [DocAgent] score={score:.3f} | {filename} | {node.text[:50]}...")
 
-    print(f"[DocAgent] {len(results)} result(s) found.")
+    print(f"[DocAgent] Returning {len(results)} result(s).")
     return {"agent_results": results}
