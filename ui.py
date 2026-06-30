@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
-# ── FastAPI backend URL 
-API_URL = "http://localhost:8000"
+import os
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(
     page_title="NexusAgent AI Console",
